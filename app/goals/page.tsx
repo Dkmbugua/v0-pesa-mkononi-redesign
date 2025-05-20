@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Car, GraduationCap, Building, Plane, Plus, Target } from "lucide-react"
+import { createClient } from "@/utils/supabase/client"
 
 export default function SavingsGoalsPage() {
   return (

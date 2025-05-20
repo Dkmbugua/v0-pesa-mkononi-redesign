@@ -1,68 +1,87 @@
 "use client";
-import React, { useState } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 // This is the Login page. It collects email and password from the user.
 // Later, you can connect this to Firebase for real authentication.
 export default function LoginPage() {
-  // State to hold form values
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const router = useRouter();
+  const supabase = createClient();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
 
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) router.replace("/dashboard");
+    });
+  }, [router, supabase]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, just check if fields are filled
-    if (!email || !password) {
-      setError('Please enter both email and password.');
-      return;
+    setError("");
+    if (isSignUp) {
+      // Sign Up
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setError(error.message);
+      } else {
+        alert("Check your email for a confirmation link!");
+      }
+    } else {
+      // Sign In
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        setError(error.message);
+      } else {
+        router.replace("/dashboard");
+      }
     }
-    setError('');
-    // TODO: Add Firebase login here later
-    alert('Login submitted! (No backend yet)');
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded shadow">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login to Pesa Mkononi</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block mb-1 font-medium">Email</label>
-            <input
-              type="email"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-green-400"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-          <div>
-            <label className="block mb-1 font-medium">Password</label>
-            <input
-              type="password"
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:border-green-400"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-            />
-          </div>
-          {error && <div className="text-red-500 text-sm">{error}</div>}
-          <button
-            type="submit"
-            className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600 transition"
-          >
-            Login
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-green-600 hover:underline">Sign up</Link>
-        </p>
+    <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-10 p-8 bg-white rounded shadow">
+      <h2 className="text-2xl font-bold mb-4">{isSignUp ? "Sign Up" : "Sign In"}</h2>
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+        className="w-full mb-2 p-2 border rounded"
+        required
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={e => setPassword(e.target.value)}
+        className="w-full mb-2 p-2 border rounded"
+        required
+      />
+      {error && <div className="text-red-500 mb-2">{error}</div>}
+      <button type="submit" className="w-full bg-green-600 text-white p-2 rounded">
+        {isSignUp ? "Sign Up" : "Sign In"}
+      </button>
+      <div className="mt-4 text-center">
+        {isSignUp ? (
+          <span>
+            Already have an account?{" "}
+            <button type="button" className="text-blue-600 underline" onClick={() => setIsSignUp(false)}>
+              Sign In
+            </button>
+          </span>
+        ) : (
+          <span>
+            Don't have an account?{" "}
+            <button type="button" className="text-blue-600 underline" onClick={() => setIsSignUp(true)}>
+              Sign Up
+            </button>
+          </span>
+        )}
       </div>
-    </div>
+    </form>
   );
 } 

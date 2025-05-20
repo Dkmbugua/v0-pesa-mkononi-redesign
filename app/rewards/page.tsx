@@ -3,6 +3,7 @@
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Award, Star, Trophy, TrendingUp, Brain, Medal } from "lucide-react"
+import { createClient } from "@/utils/supabase/client"
 
 export default function RewardsPage() {
   return (

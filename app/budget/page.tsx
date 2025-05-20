@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { Coffee, Bus, Gamepad2, BookOpen, Building, ShoppingBag, LightbulbIcon } from "lucide-react"
+import { createClient } from "@/utils/supabase/client"
 
 // Sample data for budget allocation
 const budgetData = [

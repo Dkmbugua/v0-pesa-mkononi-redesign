@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Coffee, Bus, Gamepad2, BookOpen, ShoppingBag, School, Home } from "lucide-react"
+import { createClient } from "@/utils/supabase/client"
 
 // Define expense categories
 const categories = [

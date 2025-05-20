@@ -4,6 +4,10 @@ import { ArrowUpRight, ArrowDownRight, LightbulbIcon, Coffee, Bus, Gamepad2, Boo
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
+import { useEffect, useState } from "react"
+import { createClient } from "@/utils/supabase/client"
+import type { User } from '@supabase/supabase-js'
+import { useRouter } from "next/navigation"
 
 // Sample data for the weekly expenses chart
 const weeklyData = [
@@ -49,11 +53,27 @@ const recentTransactions = [
 ]
 
 export default function Dashboard() {
+  const [user, setUser] = useState<User | null>(null)
+  const supabase = createClient()
+  const router = useRouter()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      console.log("Dashboard user:", user);
+      setUser(user);
+      if (!user) {
+        router.replace("/login");
+      }
+    })
+  }, [router])
+
+  if (!user) return <div>Loading...</div>;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
-          <h1 className="text-2xl font-bold">Hello, Kimani! 👋</h1>
+          <h1 className="text-2xl font-bold">Hello, {user ? user.user_metadata.full_name || user.email : "Loading..."} 👋</h1>
           <p className="text-gray-500">Here's your financial overview</p>
         </div>
         <Button variant="outline" className="mt-2 md:mt-0">
@@ -173,7 +193,7 @@ export default function Dashboard() {
       {/* Welcome Message */}
       <Card className="p-4 bg-gray-50">
         <p className="text-center">
-          <span className="font-medium">Welcome back, Kimani!</span> You've saved KSh 1,200 this week. Great job!
+          <span className="font-medium">Welcome back, {user ? user.user_metadata.full_name || user.email : "Loading..."}!</span> You've saved KSh 1,200 this week. Great job!
         </p>
       </Card>
     </div>
