@@ -8,54 +8,76 @@ import { useEffect, useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import type { User } from '@supabase/supabase-js'
 import { useRouter } from "next/navigation"
+import ProfileModal from "@/components/ProfileModal"
 
-// Sample data for the weekly expenses chart
-const weeklyData = [
-  { name: "Mon", amount: 300 },
-  { name: "Tue", amount: 100 },
-  { name: "Wed", amount: 550 },
-  { name: "Thu", amount: 200 },
-  { name: "Fri", amount: 750 },
-  { name: "Sat", amount: 500 },
-  { name: "Sun", amount: 300 },
-]
+type Transaction = {
+  id: string;
+  user_id: string;
+  amount: number;
+  category: string;
+  description: string;
+  date: string;
+  type: string;
+};
 
-// Sample data for recent transactions
-const recentTransactions = [
-  {
-    category: "Food",
-    description: "Lunch at campus",
-    amount: -450,
-    date: "Today",
-    icon: Coffee,
-  },
-  {
-    category: "Transport",
-    description: "Bus fare",
-    amount: -200,
-    date: "Today",
-    icon: Bus,
-  },
-  {
-    category: "Entertainment",
-    description: "Movie with friends",
-    amount: -1200,
-    date: "Yesterday",
-    icon: Gamepad2,
-  },
-  {
-    category: "Education",
-    description: "Books purchase",
-    amount: -3000,
-    date: "2 days ago",
-    icon: BookOpen,
-  },
-]
+// Helper to get the start of the current week (Monday)
+function getStartOfWeek(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
+  return new Date(d.setDate(diff));
+}
+
+// Prepare weekly data from transactions
+function getWeeklyData(transactions: Transaction[]) {
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const today = new Date();
+  const startOfWeek = getStartOfWeek(today);
+
+  // Initialize amounts for each day
+  const data = days.map((name, i) => {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + i);
+    return { name, amount: 0, date: date.toDateString() };
+  });
+
+  transactions.forEach((t) => {
+    if (t.type === "expense") {
+      const tDate = new Date(t.date);
+      // Only include transactions from this week
+      if (tDate >= startOfWeek && tDate <= today) {
+        const dayIndex = tDate.getDay() === 0 ? 6 : tDate.getDay() - 1; // Sunday is 6
+        data[dayIndex].amount += t.amount;
+      }
+    }
+  });
+
+  return data;
+}
+
+// Get total for a given month and type (income or expense)
+function getMonthTotals(transactions: Transaction[], type: string, date: Date) {
+  const month = date.getMonth();
+  const year = date.getFullYear();
+  return transactions
+    .filter(t => t.type === type && new Date(t.date).getMonth() === month && new Date(t.date).getFullYear() === year)
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+// Calculate percent change between two numbers
+function getPercentChange(current: number, previous: number) {
+  if (previous === 0) return current === 0 ? 0 : 100;
+  return (((current - previous) / Math.abs(previous)) * 100).toFixed(1);
+}
 
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null)
   const supabase = createClient()
   const router = useRouter()
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState({ name: "", occupation: "" });
+  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -67,16 +89,58 @@ export default function Dashboard() {
     })
   }, [router])
 
+  useEffect(() => {
+    async function fetchTransactions() {
+      const response = await fetch('/api/transactions');
+      const data = await response.json();
+      setTransactions(data.transactions);
+      setLoading(false);
+    }
+    fetchTransactions();
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/profile")
+      .then(res => res.json())
+      .then(data => setProfile(data));
+  }, []);
+
   if (!user) return <div>Loading...</div>;
+
+  const totalIncome = transactions
+    .filter(t => t.type === "income")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const totalExpenses = transactions
+    .filter(t => t.type === "expense")
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  const currentBalance = totalIncome - totalExpenses;
+
+  const now = new Date();
+  const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const thisMonthIncome = getMonthTotals(transactions, "income", now);
+  const lastMonthIncome = getMonthTotals(transactions, "income", lastMonth);
+  const incomeChange = getPercentChange(thisMonthIncome, lastMonthIncome);
+
+  const thisMonthExpenses = getMonthTotals(transactions, "expense", now);
+  const lastMonthExpenses = getMonthTotals(transactions, "expense", lastMonth);
+  const expenseChange = getPercentChange(thisMonthExpenses, lastMonthExpenses);
+
+  function handleProfileSaved(newProfile: { name: string; occupation: string }) {
+    setProfile(newProfile);
+    // Optionally, reload data or refresh page
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
-          <h1 className="text-2xl font-bold">Hello, {user ? user.user_metadata.full_name || user.email : "Loading..."} 👋</h1>
+          <h1 className="text-2xl font-bold">Hello, {profile.name || "User"} 👋</h1>
           <p className="text-gray-500">Here's your financial overview</p>
         </div>
-        <Button variant="outline" className="mt-2 md:mt-0">
+        <Button variant="outline" className="mt-2 md:mt-0" onClick={() => setModalOpen(true)}>
           My Profile
         </Button>
       </div>
@@ -86,10 +150,13 @@ export default function Dashboard() {
         <Card className="balance-card">
           <div className="space-y-2">
             <p className="text-primary-foreground/80">Current Balance</p>
-            <h2 className="text-3xl font-bold">KSh 15,420</h2>
+            <h2 className="text-3xl font-bold">KSh {currentBalance.toLocaleString()}</h2>
             <div className="flex items-center text-primary-foreground/90 text-sm">
               <ArrowUpRight className="w-4 h-4 mr-1" />
-              <span>+3.2% from last month</span>
+              <span>
+                {Number(incomeChange) > 0 ? "+" : ""}
+                {incomeChange}% from last month
+              </span>
             </div>
           </div>
         </Card>
@@ -97,7 +164,7 @@ export default function Dashboard() {
         <Card className="p-4">
           <div className="space-y-2">
             <p className="text-gray-500">Total Income</p>
-            <h2 className="text-3xl font-bold">KSh 25,000</h2>
+            <h2 className="text-3xl font-bold">KSh {totalIncome.toLocaleString()}</h2>
             <div className="flex items-center text-primary text-sm">
               <span>Bursary received</span>
             </div>
@@ -107,10 +174,13 @@ export default function Dashboard() {
         <Card className="p-4">
           <div className="space-y-2">
             <p className="text-gray-500">Total Expenses</p>
-            <h2 className="text-3xl font-bold">KSh 9,580</h2>
+            <h2 className="text-3xl font-bold">KSh {totalExpenses.toLocaleString()}</h2>
             <div className="flex items-center text-red-500 text-sm">
               <ArrowDownRight className="w-4 h-4 mr-1" />
-              <span>-12% from last month</span>
+              <span>
+                {Number(expenseChange) > 0 ? "+" : ""}
+                {expenseChange}% from last month
+              </span>
             </div>
           </div>
         </Card>
@@ -126,7 +196,7 @@ export default function Dashboard() {
         </div>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={weeklyData}>
+            <LineChart data={getWeeklyData(transactions)}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} />
               <XAxis dataKey="name" />
               <YAxis />
@@ -168,19 +238,19 @@ export default function Dashboard() {
             </Button>
           </div>
           <div className="space-y-4">
-            {recentTransactions.map((transaction, index) => (
+            {transactions.map((transaction, index) => (
               <div key={index} className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <div
                     className="w-10 h-10 rounded-full flex items-center justify-center"
                     style={{ backgroundColor: getCategoryColor(transaction.category) }}
                   >
-                    <transaction.icon className="w-5 h-5 text-white" />
+                    {/* Optionally, map category to icon here */}
                   </div>
                   <div>
                     <p className="font-medium">{transaction.category}</p>
                     <p className="text-xs text-gray-500">{transaction.description}</p>
-                    <p className="text-xs text-gray-400">{transaction.date}</p>
+                    <p className="text-xs text-gray-400">{new Date(transaction.date).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <span className="font-medium text-red-500">{formatCurrency(transaction.amount)}</span>
@@ -193,9 +263,15 @@ export default function Dashboard() {
       {/* Welcome Message */}
       <Card className="p-4 bg-gray-50">
         <p className="text-center">
-          <span className="font-medium">Welcome back, {user ? user.user_metadata.full_name || user.email : "Loading..."}!</span> You've saved KSh 1,200 this week. Great job!
+          <span className="font-medium">Welcome back, {profile.name || "User"}!</span> You've saved KSh {Math.abs(Math.round(Math.max(0, currentBalance))).toLocaleString()} this week. Great job!
         </p>
       </Card>
+
+      <ProfileModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSaved={handleProfileSaved}
+      />
     </div>
   )
 }

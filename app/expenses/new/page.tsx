@@ -77,11 +77,36 @@ export default function AddExpense() {
   // Choose categories based on type
   const currentCategories = type === 'expense' ? categories : incomeCategories
 
+  // 1. Add this function inside your component:
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: parseFloat(amount),
+        category: selectedCategory,
+        description: mpesaMessage, // or use a notes field
+        type,
+        date: new Date().toISOString(),
+      }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      alert("Failed to add transaction: " + data.error);
+    } else {
+      alert("Transaction added!");
+      setAmount("");
+      setSelectedCategory(null);
+      setMpesaMessage("");
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Add Expense or Income</h1>
       <Card className="p-6">
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Toggle for Expense/Income */}
           <div className="flex space-x-4 mb-2">
             <button
