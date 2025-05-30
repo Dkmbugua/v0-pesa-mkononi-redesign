@@ -1,127 +1,114 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Car, GraduationCap, Building, Plane, Plus, Target } from "lucide-react"
 import { createClient } from "@/utils/supabase/client"
 
-export default function SavingsGoalsPage() {
+type Goal = {
+  id: number;
+  name: string;
+  target_amount: number;
+  saved_amount: number;
+  deadline: string;
+  description?: string;
+  status?: string;
+};
+
+export default function GoalsPage() {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [form, setForm] = useState({ name: "", target_amount: "", deadline: "", description: "" });
+
+  useEffect(() => {
+    fetchGoals();
+  }, []);
+
+  async function fetchGoals() {
+    const res = await fetch("/api/goals");
+    const data = await res.json();
+    setGoals(data.goals || []);
+  }
+
+  async function handleAddGoal(e: React.FormEvent) {
+    e.preventDefault();
+    await fetch("/api/goals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    setForm({ name: "", target_amount: "", deadline: "", description: "" });
+    fetchGoals();
+  }
+
+  async function handleDeleteGoal(id: number) {
+    await fetch("/api/goals", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    fetchGoals();
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <h1 className="text-2xl font-bold">Savings Goals</h1>
 
-      {/* Completed Goals */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Completed Goals</h2>
-        <Card className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <Target className="w-5 h-5 text-purple-600" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium">Phone Repair</h3>
-                <Progress value={100} className="h-2 mt-2" />
-                <div className="flex justify-between mt-1 text-sm text-gray-500">
-                  <span>KSh 5,000</span>
-                  <span>KSh 5,000</span>
-                </div>
-                <p className="text-right text-xs text-primary mt-1">100%</p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      </div>
+      {/* Add Goal Form */}
+      <Card className="p-4 mb-4">
+        <form onSubmit={handleAddGoal} className="flex flex-col gap-2">
+          <input
+            type="text"
+            placeholder="Goal Name"
+            value={form.name}
+            onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+            required
+            className="border rounded p-2"
+          />
+          <input
+            type="number"
+            placeholder="Target Amount"
+            value={form.target_amount}
+            onChange={e => setForm(f => ({ ...f, target_amount: e.target.value }))}
+            required
+            className="border rounded p-2"
+          />
+          <input
+            type="date"
+            placeholder="Deadline"
+            value={form.deadline}
+            onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))}
+            className="border rounded p-2"
+          />
+          <textarea
+            placeholder="Description (optional)"
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            className="border rounded p-2"
+          />
+          <Button type="submit">Add Goal</Button>
+        </form>
+      </Card>
 
-      {/* Goal Ideas */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Goal Ideas</h2>
-        <Card className="p-6">
-          <h3 className="font-medium mb-6">Quick Start with Templates</h3>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center mb-2">
-                <Car className="w-8 h-8 text-white" />
-              </div>
-              <span className="text-sm font-medium">Car Down Payment</span>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-2">
-                <GraduationCap className="w-8 h-8 text-white" />
-              </div>
-              <span className="text-sm font-medium">Graduation Trip</span>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center mb-2">
-                <Building className="w-8 h-8 text-white" />
-              </div>
-              <span className="text-sm font-medium">Apartment Deposit</span>
-            </div>
-
-            <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 rounded-full bg-purple-500 flex items-center justify-center mb-2">
-                <Plane className="w-8 h-8 text-white" />
-              </div>
-              <span className="text-sm font-medium">Holiday</span>
-            </div>
-          </div>
-
-          <div className="mt-8 flex justify-center">
-            <Button className="bg-primary text-white">
-              <Plus className="w-5 h-5 mr-2" />
-              Create Custom Goal
-            </Button>
-          </div>
-        </Card>
-      </div>
-
-      {/* Current Goals */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Current Goals</h2>
-        <Card className="p-6">
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Building className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="font-medium">Emergency Fund</h3>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">15,000 / 25,000 KSh</p>
-                </div>
-              </div>
-              <Progress value={60} className="h-2" />
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Car className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <h3 className="font-medium">Laptop</h3>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium">35,000 / 75,000 KSh</p>
-                </div>
-              </div>
-              <Progress value={47} className="h-2" />
-            </div>
-
-            <div className="flex justify-center mt-4">
-              <Button variant="outline" className="text-primary border-primary/30">
-                <Plus className="w-4 h-4 mr-2" />
-                Create New Goal
+      {/* Goals List */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {goals.map(goal => (
+          <Card key={goal.id} className="p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="font-semibold">{goal.name}</h3>
+              <Button variant="destructive" size="sm" onClick={() => handleDeleteGoal(goal.id)}>
+                Delete
               </Button>
             </div>
-          </div>
-        </Card>
+            <p className="text-sm text-gray-500 mb-2">{goal.description}</p>
+            <p className="text-xs text-gray-400 mb-2">Deadline: {goal.deadline ? new Date(goal.deadline).toLocaleDateString() : "No deadline"}</p>
+            <Progress value={goal.saved_amount && goal.target_amount ? (goal.saved_amount / goal.target_amount) * 100 : 0} className="h-2 mb-1" />
+            <div className="text-xs text-gray-600">
+              Saved: KSh {goal.saved_amount || 0} / KSh {goal.target_amount}
+            </div>
+          </Card>
+        ))}
       </div>
     </div>
   )

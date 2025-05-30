@@ -268,46 +268,6 @@ export default function BudgetPage() {
         </Card>
       </div>
 
-      {/* AI Budget Insights */}
-      <Card className="p-4">
-        <h3 className="font-semibold text-lg mb-4">AI Budget Insights</h3>
-
-        <div className="space-y-4">
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <h4 className="font-medium text-blue-700 flex items-center">
-              <LightbulbIcon className="w-5 h-5 mr-2" />
-              Spending Analysis
-            </h4>
-            <p className="mt-2 text-gray-700">
-              Based on your spending patterns, you could reduce your food expenses by 15% by cooking more meals at home.
-              Consider allocating more funds to your education category for upcoming semester expenses.
-            </p>
-          </div>
-
-          <div className="p-4 bg-green-50 rounded-lg border border-green-100">
-            <h4 className="font-medium text-green-700 flex items-center">
-              <LightbulbIcon className="w-5 h-5 mr-2" />
-              Savings Opportunity
-            </h4>
-            <p className="mt-2 text-gray-700">
-              Setting aside KSh 500 more per month for entertainment would bring your budget in line with typical
-              student spending. Your transport spending is well-optimized, keeping you under budget consistently.
-            </p>
-          </div>
-
-          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-100">
-            <h4 className="font-medium text-yellow-700 flex items-center">
-              <LightbulbIcon className="w-5 h-5 mr-2" />
-              Budget Health
-            </h4>
-            <p className="mt-2 text-gray-700">
-              Your current budget utilization is at {((spentSoFar / budget) * 100).toFixed(0)}%. This is within the healthy range of 80-90% for a student
-              budget. Continue tracking expenses closely to maintain this healthy balance.
-            </p>
-          </div>
-        </div>
-      </Card>
-
       <div className="max-w-2xl mx-auto p-8 bg-white rounded-xl shadow-lg mt-10">
         <h1 className="text-3xl font-bold mb-6 text-center text-green-700">AI Budgeter</h1>
         <div className="mb-6 flex items-center gap-2">
@@ -407,16 +367,6 @@ export default function BudgetPage() {
         {results.length === 0 && (
           <div className="text-gray-500 text-center my-8">
             No budget allocation yet. Set your budget and click "Generate AI Budget"!
-          </div>
-        )}
-        {insights.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-lg font-bold mb-2">AI Insights</h2>
-            <ul>
-              {insights.map((insight, i) => (
-                <li key={i} className="mb-1 text-blue-700">{insight}</li>
-              ))}
-            </ul>
           </div>
         )}
       </div>

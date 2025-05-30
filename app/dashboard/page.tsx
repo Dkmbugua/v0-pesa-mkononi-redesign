@@ -28,6 +28,24 @@ function getStartOfWeek(date: Date) {
   return new Date(d.setDate(diff));
 }
 
+// Helper to get the start and end of a month
+function getMonthRange(offset = 0) {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
+  return { start, end };
+}
+
+// Helper to get start/end of last week
+function getLastWeekRange() {
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() - 7 - (start.getDay() === 0 ? 6 : start.getDay() - 1));
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { start, end };
+}
+
 // Prepare weekly data from transactions
 function getWeeklyData(transactions: Transaction[]) {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -78,6 +96,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({ name: "", occupation: "" });
   const [modalOpen, setModalOpen] = useState(false);
+  const [graphPeriod, setGraphPeriod] = useState('thisWeek');
+  const [customRange, setCustomRange] = useState<{ start: Date | null; end: Date | null }>({ start: null, end: null });
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -127,6 +147,57 @@ export default function Dashboard() {
   const thisMonthExpenses = getMonthTotals(transactions, "expense", now);
   const lastMonthExpenses = getMonthTotals(transactions, "expense", lastMonth);
   const expenseChange = getPercentChange(thisMonthExpenses, lastMonthExpenses);
+
+  // Get data for selected period
+  function getGraphData() {
+    let start: Date, end: Date;
+    if (graphPeriod === 'thisWeek') {
+      start = getStartOfWeek(new Date());
+      end = new Date();
+    } else if (graphPeriod === 'lastWeek') {
+      const range = getLastWeekRange();
+      start = range.start;
+      end = range.end;
+    } else if (graphPeriod === 'thisMonth') {
+      const range = getMonthRange(0);
+      start = range.start;
+      end = range.end;
+    } else if (graphPeriod === 'lastMonth') {
+      const range = getMonthRange(-1);
+      start = range.start;
+      end = range.end;
+    } else if (graphPeriod === 'custom' && customRange.start && customRange.end) {
+      start = customRange.start;
+      end = customRange.end;
+    } else {
+      start = getStartOfWeek(new Date());
+      end = new Date();
+    }
+    // Prepare data for the selected range
+    const days: { name: string; expense: number; income: number; date: string }[] = [];
+    let d = new Date(start);
+    while (d <= end) {
+      days.push({
+        name: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        expense: 0,
+        income: 0,
+        date: d.toDateString(),
+      });
+      d = new Date(d);
+      d.setDate(d.getDate() + 1);
+    }
+    transactions.forEach((t) => {
+      const tDate = new Date(t.date);
+      if (tDate >= start && tDate <= end) {
+        const dayIndex = Math.floor((tDate.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        if (dayIndex >= 0 && dayIndex < days.length) {
+          if (t.type === "expense") days[dayIndex].expense += t.amount;
+          if (t.type === "income") days[dayIndex].income += t.amount;
+        }
+      }
+    });
+    return days;
+  }
 
   function handleProfileSaved(newProfile: { name: string; occupation: string }) {
     setProfile(newProfile);
@@ -186,29 +257,50 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Weekly Expenses Chart */}
+      {/* Expenses & Income Chart */}
       <Card className="p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-lg">Weekly Expenses</h3>
-          <Button variant="outline" size="sm" className="text-xs">
-            This Week
-          </Button>
+          <h3 className="font-semibold text-lg">Expenses & Income Chart</h3>
+          <div className="flex gap-2 items-center">
+            <select
+              value={graphPeriod}
+              onChange={e => setGraphPeriod(e.target.value)}
+              className="border rounded p-1 text-xs"
+            >
+              <option value="thisWeek">This Week</option>
+              <option value="lastWeek">Last Week</option>
+              <option value="thisMonth">This Month</option>
+              <option value="lastMonth">Last Month</option>
+              <option value="custom">Custom Range</option>
+            </select>
+            {graphPeriod === 'custom' && (
+              <>
+                <input
+                  type="date"
+                  value={customRange.start ? customRange.start.toISOString().slice(0, 10) : ''}
+                  onChange={e => setCustomRange(r => ({ ...r, start: e.target.value ? new Date(e.target.value) : null }))}
+                  className="border rounded p-1 text-xs"
+                />
+                <span>-</span>
+                <input
+                  type="date"
+                  value={customRange.end ? (customRange.end as Date).toISOString().slice(0, 10) : ''}
+                  onChange={e => setCustomRange(r => ({ ...r, end: e.target.value ? new Date(e.target.value) : null }))}
+                  className="border rounded p-1 text-xs"
+                />
+              </>
+            )}
+          </div>
         </div>
         <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={getWeeklyData(transactions)}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={getGraphData()}>
+              <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis />
               <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="amount"
-                stroke="#A8D08D"
-                strokeWidth={2}
-                dot={{ r: 4, fill: "#A8D08D", strokeWidth: 0 }}
-                activeDot={{ r: 6, fill: "#A8D08D", strokeWidth: 0 }}
-              />
+              <Line type="monotone" dataKey="expense" stroke="#ef4444" name="Expenses" />
+              <Line type="monotone" dataKey="income" stroke="#22c55e" name="Income" />
             </LineChart>
           </ResponsiveContainer>
         </div>
