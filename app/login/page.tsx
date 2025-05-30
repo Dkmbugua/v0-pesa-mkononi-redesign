@@ -42,6 +42,21 @@ export default function LoginPage() {
     }
   };
 
+  async function handleForgotPassword() {
+    if (!email) {
+      alert("Please enter your email above first.");
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://your-app-url.com/reset-password", // Change to your reset page
+    });
+    if (error) {
+      alert("Error sending reset email: " + error.message);
+    } else {
+      alert("Password reset email sent! Check your inbox.");
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-10 p-8 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-4">{isSignUp ? "Sign Up" : "Sign In"}</h2>
@@ -82,6 +97,9 @@ export default function LoginPage() {
           </span>
         )}
       </div>
+      <button type="button" onClick={handleForgotPassword} className="text-blue-500 text-sm">
+        Forgot Password?
+      </button>
     </form>
   );
 } 
