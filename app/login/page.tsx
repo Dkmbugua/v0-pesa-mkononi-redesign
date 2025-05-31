@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 // This is the Login page. It collects email and password from the user.
@@ -12,12 +12,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const searchParams = useSearchParams();
 
   // If already logged in, redirect to dashboard
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) router.replace("/dashboard");
-    });
+    // Define an async function inside useEffect
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) router.replace("/dashboard");
+    };
+    checkUser(); // Call the async function
   }, [router, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,7 +52,7 @@ export default function LoginPage() {
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://your-app-url.com/reset-password", // Change to your reset page
+      redirectTo: "https://v0-pesa-mkononi-redesign-wdx4.vercel.app/reset-password", // Updated to your real reset page
     });
     if (error) {
       alert("Error sending reset email: " + error.message);

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation"
 import { Home, PlusCircle, Clock, PiggyBank, Award, User } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import LogoutButton from "./LogoutButton"
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -77,18 +78,21 @@ export default function Sidebar() {
         </Link>
       </nav>
 
-      <div className="p-4 border-t flex items-center space-x-3">
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 focus:outline-none">
-              <User className="w-5 h-5" />
-            </button>
-          </PopoverTrigger>
-          <PopoverContent>
-            <ProfileForm />
-          </PopoverContent>
-        </Popover>
-        <SidebarProfile refreshKey={profileRefreshKey} />
+      <div className="p-4 border-t flex flex-col items-center space-y-3">
+        <div className="flex items-center space-x-3 w-full">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-700 focus:outline-none">
+                <User className="w-5 h-5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent>
+              <ProfileForm />
+            </PopoverContent>
+          </Popover>
+          <SidebarProfile refreshKey={profileRefreshKey} />
+        </div>
+        <LogoutButton />
       </div>
     </div>
   )
