@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 // This page lets the user set a new password after clicking the reset link in their email.
 // After a successful reset, the user is redirected to the dashboard.
-export default function ResetPasswordPage() {
+
+// Inner component with the actual reset logic
+function ResetPasswordInner() {
   const [password, setPassword] = useState(""); // Stores the new password
   const [error, setError] = useState(""); // Stores any error messages
   const [success, setSuccess] = useState(false); // Tracks if reset was successful
@@ -68,5 +70,14 @@ export default function ResetPasswordPage() {
         Reset Password
       </button>
     </form>
+  );
+}
+
+// Export the page wrapped in Suspense
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ResetPasswordInner />
+    </Suspense>
   );
 } 
