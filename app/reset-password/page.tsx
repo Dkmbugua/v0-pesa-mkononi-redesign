@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 // This page lets the user set a new password after clicking the reset link in their email.
@@ -9,8 +9,28 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState(""); // Stores the new password
   const [error, setError] = useState(""); // Stores any error messages
   const [success, setSuccess] = useState(false); // Tracks if reset was successful
+  const [sessionReady, setSessionReady] = useState(false); // Tracks if session is set
   const router = useRouter();
   const supabase = createClient();
+  const searchParams = useSearchParams();
+
+  // On mount, exchange the access_token for a session if present
+  useEffect(() => {
+    const access_token = searchParams.get("access_token");
+    const refresh_token = searchParams.get("refresh_token");
+    if (access_token && refresh_token) {
+      supabase.auth
+        .setSession({ access_token, refresh_token })
+        .then(({ error }) => {
+          if (error) setError(error.message);
+          setSessionReady(true);
+        });
+    } else {
+      // If no tokens, assume session is ready (for direct access)
+      setSessionReady(true);
+    }
+    // eslint-disable-next-line
+  }, []);
 
   // Handles the password reset form submission
   const handleReset = async (e: React.FormEvent) => {
@@ -26,6 +46,10 @@ export default function ResetPasswordPage() {
       setTimeout(() => router.replace("/dashboard"), 1500);
     }
   };
+
+  if (!sessionReady) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <form onSubmit={handleReset} className="max-w-md mx-auto mt-10 p-8 bg-white rounded shadow">

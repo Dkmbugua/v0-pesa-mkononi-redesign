@@ -1,11 +1,13 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
 // This is the Login page. It collects email and password from the user.
 // Later, you can connect this to Firebase for real authentication.
-export default function LoginPage() {
+
+// Inner component with the actual login logic
+function LoginPageInner() {
   const router = useRouter();
   const supabase = createClient();
   const [email, setEmail] = useState("");
@@ -105,5 +107,14 @@ export default function LoginPage() {
         Forgot Password?
       </button>
     </form>
+  );
+}
+
+// Export the page wrapped in Suspense to fix useSearchParams error
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginPageInner />
+    </Suspense>
   );
 } 
