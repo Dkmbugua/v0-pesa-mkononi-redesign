@@ -22,6 +22,15 @@ function ResetPasswordInner() {
   useEffect(() => {
     const code = searchParams.get("code");
     const email = searchParams.get("email");
+    const errorCode = searchParams.get("error_code");
+    const errorDescription = searchParams.get("error_description");
+
+    if (errorCode || errorDescription) {
+      setError(errorDescription || "Something went wrong. Please request a new reset link.");
+      setSessionReady(false);
+      return;
+    }
+
     if (code && email) {
       supabase.auth.verifyOtp({ type: "recovery", token: code, email })
         .then(({ error }) => {
