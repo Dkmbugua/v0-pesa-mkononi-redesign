@@ -23,8 +23,7 @@ function ResetPasswordInner() {
     const code = searchParams.get("code");
     const email = searchParams.get("email");
     if (code && email) {
-      supabase.auth
-        .verifyOtp({ type: "recovery", token: code, email })
+      supabase.auth.verifyOtp({ type: "recovery", token: code, email })
         .then(({ error }) => {
           if (error) setError(error.message);
           setSessionReady(true);
