@@ -28,7 +28,10 @@ export async function middleware(request: NextRequest) {
   const { data: { session } } = await supabase.auth.getSession();
 
   // Redirect logic
-  if (!session && !['/login', '/signup'].includes(request.nextUrl.pathname)) {
+  if (
+    !session &&
+    !['/login', '/signup', '/reset-password'].includes(request.nextUrl.pathname)
+  ) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
   if (session && ['/login', '/signup'].includes(request.nextUrl.pathname)) {

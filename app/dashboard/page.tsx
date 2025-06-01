@@ -10,6 +10,8 @@ import type { User } from '@supabase/supabase-js'
 import { useRouter } from "next/navigation"
 import ProfileModal from "@/components/ProfileModal"
 
+export const dynamic = "force-dynamic";
+
 type Transaction = {
   id: string;
   user_id: string;
