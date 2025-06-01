@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { Eye, EyeOff } from "lucide-react";
 
 // This is the Login page. It collects email and password from the user.
 // Later, you can connect this to Firebase for real authentication.
@@ -12,6 +13,7 @@ function LoginPageInner() {
   const supabase = createClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // Toggle for password visibility
   const [error, setError] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const searchParams = useSearchParams();
@@ -54,7 +56,7 @@ function LoginPageInner() {
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://v0-pesa-mkononi-redesign-wdx4.vercel.app/reset-password", // Updated to your real reset page
+      redirectTo: `https://v0-pesa-mkononi-redesign-wdx4.vercel.app/reset-password?email=${encodeURIComponent(email)}`,
     });
     if (error) {
       alert("Error sending reset email: " + error.message);
@@ -74,14 +76,25 @@ function LoginPageInner() {
         className="w-full mb-2 p-2 border rounded"
         required
       />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        className="w-full mb-2 p-2 border rounded"
-        required
-      />
+      <div className="relative mb-2">
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className="w-full p-2 border rounded pr-10"
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(v => !v)}
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+          tabIndex={-1}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+      </div>
       {error && <div className="text-red-500 mb-2">{error}</div>}
       <button type="submit" className="w-full bg-green-600 text-white p-2 rounded">
         {isSignUp ? "Sign Up" : "Sign In"}

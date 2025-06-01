@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { Eye, EyeOff } from "lucide-react";
 
 // This page lets the user set a new password after clicking the reset link in their email.
 // After a successful reset, the user is redirected to the dashboard.
@@ -9,6 +10,7 @@ import { createClient } from "@/utils/supabase/client";
 // Inner component with the actual reset logic
 function ResetPasswordInner() {
   const [password, setPassword] = useState(""); // Stores the new password
+  const [showPassword, setShowPassword] = useState(false); // Toggle for password visibility
   const [error, setError] = useState(""); // Stores any error messages
   const [success, setSuccess] = useState(false); // Tracks if reset was successful
   const [sessionReady, setSessionReady] = useState(false); // Tracks if session is set
@@ -18,18 +20,18 @@ function ResetPasswordInner() {
 
   // On mount, exchange the access_token for a session if present
   useEffect(() => {
-    const access_token = searchParams.get("access_token");
-    const refresh_token = searchParams.get("refresh_token");
-    if (access_token && refresh_token) {
+    const code = searchParams.get("code");
+    const email = searchParams.get("email");
+    if (code && email) {
       supabase.auth
-        .setSession({ access_token, refresh_token })
+        .verifyOtp({ type: "recovery", token: code, email })
         .then(({ error }) => {
           if (error) setError(error.message);
           setSessionReady(true);
         });
     } else {
-      // If no tokens, assume session is ready (for direct access)
-      setSessionReady(true);
+      setError("Invalid or missing code/email.");
+      setSessionReady(false);
     }
     // eslint-disable-next-line
   }, []);
@@ -54,16 +56,27 @@ function ResetPasswordInner() {
   }
 
   return (
-    <form onSubmit={handleReset} className="max-w-md mx-auto mt-10 p-8 bg-white rounded shadow">
+    <form onSubmit={handleReset} className="max-w-md mx-auto mt-10 p-8 bg-white rounded shadow relative">
       <h2 className="text-2xl font-bold mb-4">Set New Password</h2>
-      <input
-        type="password"
-        placeholder="New Password"
-        value={password}
-        onChange={e => setPassword(e.target.value)}
-        className="w-full mb-2 p-2 border rounded"
-        required
-      />
+      <div className="relative mb-2">
+        <input
+          type={showPassword ? "text" : "password"}
+          placeholder="New Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          className="w-full p-2 border rounded pr-10"
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setShowPassword(v => !v)}
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+          tabIndex={-1}
+          aria-label={showPassword ? "Hide password" : "Show password"}
+        >
+          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+        </button>
+      </div>
       {error && <div className="text-red-500 mb-2">{error}</div>}
       {success && <div className="text-green-600 mb-2">Password reset! Redirecting...</div>}
       <button type="submit" className="w-full bg-green-600 text-white p-2 rounded">
