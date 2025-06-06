@@ -50,17 +50,21 @@ function LoginPageInner() {
     }
   };
 
-  async function handleForgotPassword() {
+  async function handleMagicLink() {
     if (!email) {
       alert("Please enter your email above first.");
       return;
     }
-    // Use the default Supabase password reset flow
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: "https://v0-pesa-mkononi-redesign-wdx4.vercel.app/dashboard"
+      }
+    });
     if (error) {
-      alert("Error sending reset email: " + error.message);
+      alert("Error sending magic link: " + error.message);
     } else {
-      alert("Password reset email sent! Check your inbox.");
+      alert("Magic link sent! Check your inbox.");
     }
   }
 
@@ -115,8 +119,8 @@ function LoginPageInner() {
           </span>
         )}
       </div>
-      <button type="button" onClick={handleForgotPassword} className="text-blue-500 text-sm">
-        Forgot Password?
+      <button type="button" onClick={handleMagicLink} className="text-blue-500 text-sm">
+        Send Magic Link
       </button>
     </form>
   );
