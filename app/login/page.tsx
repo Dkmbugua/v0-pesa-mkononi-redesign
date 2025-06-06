@@ -55,12 +55,7 @@ function LoginPageInner() {
       alert("Please enter your email above first.");
       return;
     }
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: "https://v0-pesa-mkononi-redesign-wdx4.vercel.app/dashboard"
-      }
-    });
+    const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) {
       alert("Error sending magic link: " + error.message);
     } else {
