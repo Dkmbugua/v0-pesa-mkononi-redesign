@@ -13,8 +13,24 @@ function ResetPasswordInner() {
   const [showPassword, setShowPassword] = useState(false); // Toggle for password visibility
   const [error, setError] = useState(""); // Stores any error messages
   const [success, setSuccess] = useState(false); // Tracks if reset was successful
+  const [sessionReady, setSessionReady] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const searchParams = useSearchParams();
+
+  // On mount, exchange the code for a session if present
+  useEffect(() => {
+    const code = searchParams.get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code)
+        .then(({ error }) => {
+          if (error) setError(error.message);
+          else setSessionReady(true);
+        });
+    } else {
+      setError("Invalid or missing code.");
+    }
+  }, []);
 
   // Handles the password reset form submission
   const handleReset = async (e: React.FormEvent) => {
@@ -30,6 +46,8 @@ function ResetPasswordInner() {
       setTimeout(() => router.replace("/dashboard"), 1500);
     }
   };
+
+  if (!sessionReady) return <div>Loading...</div>;
 
   return (
     <form onSubmit={handleReset} className="max-w-md mx-auto mt-10 p-8 bg-white rounded shadow relative">
