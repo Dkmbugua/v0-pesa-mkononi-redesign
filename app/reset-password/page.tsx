@@ -21,7 +21,6 @@ function ResetPasswordInner() {
   // On mount, exchange the access_token for a session if present
   useEffect(() => {
     const code = searchParams.get("code");
-    const email = searchParams.get("email");
     const errorCode = searchParams.get("error_code");
     const errorDescription = searchParams.get("error_description");
 
@@ -31,14 +30,20 @@ function ResetPasswordInner() {
       return;
     }
 
-    if (code && email) {
+    if (code) {
+      const email = searchParams.get("email");
+      if (!email) {
+        setError("Email is required for password reset.");
+        setSessionReady(false);
+        return;
+      }
       supabase.auth.verifyOtp({ type: "recovery", token: code, email })
         .then(({ error }) => {
           if (error) setError(error.message);
           setSessionReady(true);
         });
     } else {
-      setError("Invalid or missing code/email.");
+      setError("Invalid or missing code.");
       setSessionReady(false);
     }
     // eslint-disable-next-line
