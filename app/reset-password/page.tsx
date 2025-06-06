@@ -39,8 +39,13 @@ function ResetPasswordInner() {
       }
       supabase.auth.verifyOtp({ type: "recovery", token: code, email })
         .then(({ error }) => {
-          if (error) setError(error.message);
-          setSessionReady(true);
+          if (error) {
+            setError(error.message);
+            console.error('Supabase verifyOtp error:', error);
+            setSessionReady(false);
+          } else {
+            setSessionReady(true);
+          }
         });
     } else {
       setError("Invalid or missing code.");
