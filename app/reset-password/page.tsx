@@ -13,46 +13,8 @@ function ResetPasswordInner() {
   const [showPassword, setShowPassword] = useState(false); // Toggle for password visibility
   const [error, setError] = useState(""); // Stores any error messages
   const [success, setSuccess] = useState(false); // Tracks if reset was successful
-  const [sessionReady, setSessionReady] = useState(false); // Tracks if session is set
   const router = useRouter();
   const supabase = createClient();
-  const searchParams = useSearchParams();
-
-  // On mount, exchange the access_token for a session if present
-  useEffect(() => {
-    const code = searchParams.get("code");
-    const errorCode = searchParams.get("error_code");
-    const errorDescription = searchParams.get("error_description");
-
-    if (errorCode || errorDescription) {
-      setError(errorDescription || "Something went wrong. Please request a new reset link.");
-      setSessionReady(false);
-      return;
-    }
-
-    if (code) {
-      const email = searchParams.get("email");
-      if (!email) {
-        setError("Email is required for password reset.");
-        setSessionReady(false);
-        return;
-      }
-      supabase.auth.verifyOtp({ type: "recovery", token: code, email })
-        .then(({ error }) => {
-          if (error) {
-            setError(error.message);
-            console.error('Supabase verifyOtp error:', error);
-            setSessionReady(false);
-          } else {
-            setSessionReady(true);
-          }
-        });
-    } else {
-      setError("Invalid or missing code.");
-      setSessionReady(false);
-    }
-    // eslint-disable-next-line
-  }, []);
 
   // Handles the password reset form submission
   const handleReset = async (e: React.FormEvent) => {
@@ -68,10 +30,6 @@ function ResetPasswordInner() {
       setTimeout(() => router.replace("/dashboard"), 1500);
     }
   };
-
-  if (!sessionReady) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <form onSubmit={handleReset} className="max-w-md mx-auto mt-10 p-8 bg-white rounded shadow relative">
