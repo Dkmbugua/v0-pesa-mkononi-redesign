@@ -56,9 +56,7 @@ function LoginPageInner() {
       return;
     }
     // Use the default Supabase password reset flow
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `https://v0-pesa-mkononi-redesign-wdx4.vercel.app/login`,
-    });
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
     if (error) {
       alert("Error sending reset email: " + error.message);
     } else {
